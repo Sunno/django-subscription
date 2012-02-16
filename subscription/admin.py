@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.utils.html import conditional_escape as esc
 
-from models import Subscription, UserSubscription, Transaction
+from models import Subscription, UserSubscription
 
 def _pricing(sub): return sub.get_pricing_display()
 def _trial(sub): return sub.get_trial_display()
@@ -59,10 +59,3 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
     extend.short_description = 'Extend subscription'
 
 admin.site.register(UserSubscription, UserSubscriptionAdmin)
-
-class TransactionAdmin(admin.ModelAdmin):
-    date_hierarchy = 'timestamp'
-    list_display = ('timestamp', 'id', 'event', _subscription, _user, 'amount', 'comment')
-    list_display_links = ('timestamp', 'id')
-    list_filter = ('subscription', 'user')
-admin.site.register(Transaction, TransactionAdmin)

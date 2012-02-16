@@ -7,21 +7,6 @@ from django.utils.translation import ugettext as _, ungettext, ugettext_lazy
 
 import signals, utils
 
-class Transaction(models.Model):
-    timestamp = models.DateTimeField(auto_now_add=True, editable=False)
-    subscription = models.ForeignKey('subscription.Subscription',
-                                     null=True, blank=True, editable=False)
-    user = models.ForeignKey(auth.models.User,
-                             null=True, blank=True, editable=False)
-    event = models.CharField(max_length=100, editable=False)
-    amount = models.DecimalField(max_digits=64, decimal_places=2,
-                                 null=True, blank=True, editable=False)
-    comment = models.TextField(blank=True, default='')
-
-    class Meta:
-        ordering = ('-timestamp',)
-
-
 _recurrence_unit_days = {
     'D' : 1.,
     'W' : 7.,
@@ -198,14 +183,8 @@ class UserSubscription(models.Model):
         if not self.valid():
             if self.expired() or not self.active:
                 self._unsubscribe()
-                Transaction(user=self.user, subscription=self.subscription,
-                            event='subscription expired'
-                            ).save()
                 if self.cancelled:
                     self.delete()
-                    Transaction(user=self.user, subscription=self.subscription,
-                                event='remove subscription (expired)'
-                                ).save()
             else: self._subscribe()
 
     def activate(self):
