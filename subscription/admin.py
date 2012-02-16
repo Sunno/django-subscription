@@ -21,11 +21,6 @@ def _user(trans):
         trans.user.pk, esc(trans.user) )
 _user.allow_tags = True
 
-def _ipn(trans):
-    return u'<a href="/admin/ipn/paypalipn/%d/">#%s</a>' % (
-        trans.ipn.pk, trans.ipn.pk )
-_ipn.allow_tags = True
-
 class UserSubscriptionAdminForm(forms.ModelForm):
     class Meta:
         model = UserSubscription
@@ -67,7 +62,7 @@ admin.site.register(UserSubscription, UserSubscriptionAdmin)
 
 class TransactionAdmin(admin.ModelAdmin):
     date_hierarchy = 'timestamp'
-    list_display = ('timestamp', 'id', 'event', _subscription, _user, _ipn, 'amount', 'comment')
+    list_display = ('timestamp', 'id', 'event', _subscription, _user, 'amount', 'comment')
     list_display_links = ('timestamp', 'id')
     list_filter = ('subscription', 'user')
 admin.site.register(Transaction, TransactionAdmin)
