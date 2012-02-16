@@ -114,8 +114,20 @@ def __user_get_subscription(user):
     return user._subscription_cache
 auth.models.User.add_to_class('get_subscription', __user_get_subscription)
 
+class UserSubscriptionManager(models.Manager):
+    def unsubscribe_expired(self):
+        """Unsubscribes all users whose subscription has expired.
 
-class ActiveUSManager(models.Manager):
+        Loops through all UserSubscription objects with `expires' field
+        earlier than datetime.date.today() and forces correct group
+        membership.
+        
+        Run this on a cronjob, every X minutes/hours/days.
+        """
+        for us in self.objects.get(expires__lt=datetime.date.today()):
+            us.fix()
+
+class ActiveUSManager(UserSubscriptionManager):
     """Custom Manager for UserSubscription that returns only live US objects."""
     def get_query_set(self):
         return super(ActiveUSManager, self).get_query_set().filter(active=True)
@@ -157,32 +169,17 @@ class UserSubscription(models.Model):
         else: return self.user_is_group_member()
     valid.boolean = True
 
-    def unsubscribe(self):
+    def _unsubscribe(self):
         """Unsubscribe user."""
         self.user.groups.remove(self.subscription.group)
         self.user.save()
 
-    def subscribe(self):
+    def _subscribe(self):
         """Subscribe user."""
         self.user.groups.add(self.subscription.group)
         self.user.save()
 
-    def fix(self):
-        """Fix group membership if not valid()."""
-        if not self.valid():
-            if self.expired() or not self.active:
-                self.unsubscribe()
-                Transaction(user=self.user, subscription=self.subscription, 
-                            event='subscription expired'
-                            ).save()
-                if self.cancelled:
-                    self.delete()
-                    Transaction(user=self.user, subscription=self.subscription, 
-                                event='remove subscription (expired)'
-                                ).save()
-            else: self.subscribe()
-
-    def extend(self, timedelta=None):
+    def _extend(self, timedelta=None):
         """Extend subscription by `timedelta' or by subscription's
         recurrence period."""
         if timedelta is not None:
@@ -196,11 +193,86 @@ class UserSubscription(models.Model):
             else:
                 self.expires = None
 
+    def fix(self):
+        """Fix group membership if not valid()."""
+        if not self.valid():
+            if self.expired() or not self.active:
+                self._unsubscribe()
+                Transaction(user=self.user, subscription=self.subscription,
+                            event='subscription expired'
+                            ).save()
+                if self.cancelled:
+                    self.delete()
+                    Transaction(user=self.user, subscription=self.subscription,
+                                event='remove subscription (expired)'
+                                ).save()
+            else: self._subscribe()
+
+    def activate(self):
+        """Activate this user subscription plan.
+        
+            Usually you'll want to call this after signing up the
+            user to this subscription (ie. us.signup()) and having
+            received the payment.
+        """
+        s = self.subscription
+        u = self.user
+        
+        if not s.recurrence_unit:
+            #one-time payment
+            self._subscribe()
+            self.expires = None
+            self.active = True
+            self.save()
+        else:
+            #recurring subscription payment
+            us._extend()
+            us.save()
+
+        signals.paid.send(s, subscription=s, user=u, usersubscription=us)
+
+    def signup(self):
+        """Signup the user to this subscription plan"""
+        u = self.user
+        s = self.subscription
+        
+        # deactivate or delete all user's other subscriptions
+        for old_us in u.usersubscription_set.all():
+            if old_us==self: continue     # don't touch current subscription
+            if old_us.cancelled:
+                old_us.delete()
+            else:
+                old_us.active = False
+                old_us._unsubscribe()
+                old_us.save()
+
+        # activate new subscription
+        self._subscribe()
+        self.active = True
+        self.cancelled = False
+        self.save()
+        
+        signals.subscribed.send(s, subscription=s, user=u, usersubscription=us)
+
+    def cancel(self):
+        """Cancel a user's subscription of this plan"""
+        if not self.active:
+            self._unsubscribe()
+            self.delete()
+        else:
+            self.cancelled = True
+            self.save()
+
+        signals.unsubscribed.send(self.subscription, subscription=self.subscription, user=self.user,
+                                    usersubscription=self,reason='cancel')
+        
     def try_change(self, subscription):
         """Check whether upgrading/downgrading to `subscription' is possible.
 
         If subscription change is possible, returns false value; if
         change is impossible, returns a list of reasons to display.
+
+        If you can change the subscription then feel free to call signup().
 
         Checks are performed by sending
         subscription.signals.change_check with sender being
@@ -212,11 +284,7 @@ class UserSubscription(models.Model):
         if self.subscription == subscription:
             if self.active and self.cancelled: return None # allow resubscribing
             return [ _(u'This is your current subscription.') ]
-        return [
-            res[1]
-            for res in signals.change_check.send(
-                self, subscription=subscription)
-            if res[1] ]
+        return [ res[1] for res in signals.change_check.send(self, subscription=subscription) if res[1] ]
 
     @models.permalink
     def get_absolute_url(self):
@@ -228,13 +296,3 @@ class UserSubscription(models.Model):
         if self.expired():
             rv += u' (expired)'
         return rv
-
-def unsubscribe_expired():
-    """Unsubscribes all users whose subscription has expired.
-
-    Loops through all UserSubscription objects with `expires' field
-    earlier than datetime.date.today() and forces correct group
-    membership."""
-    for us in UserSubscription.objects.get(expires__lt=datetime.date.today()):
-        us.fix()
-
