@@ -1,20 +1,23 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
+from django.template.defaultfilters import slugify
+from subscription.models import Subscription
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def forwards(self, orm):
-        
-        # Adding field 'Subscription.slug'
-        db.add_column('subscription_subscription', 'slug', self.gf('django.db.models.fields.SlugField')(default='', max_length=100, db_index=True), keep_default=False)
-        
+        "Write your forwards methods here."
+
+        for subscription in Subscription.objects.all():
+            subscription.slug = slugify(subscription.name)
+            subscription.save()
+
+
     def backwards(self, orm):
-        
-        # Deleting field 'Subscription.slug'
-        db.delete_column('subscription_subscription', 'slug')
+        "Write your backwards methods here."
 
 
     models = {
