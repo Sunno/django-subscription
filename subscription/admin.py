@@ -9,6 +9,8 @@ def _trial(sub): return sub.get_trial_display()
 
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('name', _pricing, _trial)
+    prepopulated_fields = { 'slug':('name',) }
+    
 admin.site.register(Subscription, SubscriptionAdmin)
 
 def _subscription(trans):
