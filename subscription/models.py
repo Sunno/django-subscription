@@ -206,10 +206,10 @@ class UserSubscription(models.Model):
             self.save()
         else:
             #recurring subscription payment
-            us._extend()
-            us.save()
+            self._extend()
+            self.save()
 
-        signals.paid.send(s, subscription=s, user=u, usersubscription=us)
+        signals.paid.send(s, subscription=s, user=u, usersubscription=self)
 
     def signup(self):
         """Signup the user to this subscription plan"""
@@ -232,7 +232,7 @@ class UserSubscription(models.Model):
         self.cancelled = False
         self.save()
         
-        signals.subscribed.send(s, subscription=s, user=u, usersubscription=us)
+        signals.subscribed.send(s, subscription=s, user=u, usersubscription=self)
 
     def cancel(self):
         """Cancel a user's subscription of this plan"""
