@@ -100,6 +100,13 @@ def __user_get_subscription(user):
     return user._subscription_cache
 auth.models.User.add_to_class('get_subscription', __user_get_subscription)
 
+def __user_get_active_subscription(user):
+    try:
+        return self.usersubscription_set.get(active=True)
+    except UserSubscription.DoesNotExist:
+        return None
+auth.models.User.add_to_class('get_active_subscription',__user_get_active_subscription)
+
 class UserSubscriptionManager(models.Manager):
     def unsubscribe_expired(self):
         """Unsubscribes all users whose subscription has expired.
