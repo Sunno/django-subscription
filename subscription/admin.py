@@ -20,7 +20,7 @@ _subscription.allow_tags = True
 
 def _user(trans):
     return u'<a href="/admin/auth/user/%d/">%s</a>' % (
-        trans.user.pk, esc(trans.user) )
+        trans.user.pk, esc(trans.user.get_full_name()) )
 _user.allow_tags = True
 
 class UserSubscriptionAdminForm(forms.ModelForm):
