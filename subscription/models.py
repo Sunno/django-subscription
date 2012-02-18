@@ -188,7 +188,7 @@ class UserSubscription(models.Model):
                     self.delete()
             else: self._subscribe()
 
-    def activate(self):
+    def activate(self,send_signal=True):
         """Activate this user subscription plan.
         
             Usually you'll want to call this after signing up the
@@ -209,9 +209,10 @@ class UserSubscription(models.Model):
             self._extend()
             self.save()
 
-        signals.paid.send(s, subscription=s, user=u, usersubscription=self)
+        if send_signal:
+            signals.paid.send(s, subscription=s, user=u, usersubscription=self)
 
-    def signup(self):
+    def signup(self,send_signal=True):
         """Signup the user to this subscription plan"""
         u = self.user
         s = self.subscription
@@ -232,9 +233,10 @@ class UserSubscription(models.Model):
         self.cancelled = False
         self.save()
         
-        signals.subscribed.send(s, subscription=s, user=u, usersubscription=self)
+        if send_signal:
+            signals.subscribed.send(s, subscription=s, user=u, usersubscription=self)
 
-    def cancel(self):
+    def cancel(self,send_signal=True):
         """Cancel a user's subscription of this plan"""
         if not self.active:
             self._unsubscribe()
@@ -243,7 +245,8 @@ class UserSubscription(models.Model):
             self.cancelled = True
             self.save()
 
-        signals.unsubscribed.send(self.subscription, subscription=self.subscription, user=self.user,
+        if send_signal:
+            signals.unsubscribed.send(self.subscription, subscription=self.subscription, user=self.user,
                                     usersubscription=self,reason='cancel')
         
     def try_change(self, subscription):
