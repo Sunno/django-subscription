@@ -59,6 +59,13 @@ def extend_date_by(date, amount, unit):
             d = r
         return datetime.date(y, m, d)
     elif unit == 'Y':
-        y, m, d = date.year, date.month, date.day
-        return datetime.date(y+amount, m, d)
+        y, m, d = date.year+amount, date.month, date.day
+        try:
+            return datetime.date(y, m, d)
+        except ValueError:
+            if m == 2 and d == 29:
+                return datetime.date(y,3,1)
+            else:
+                raise
+                
     else: raise "Unknown unit."

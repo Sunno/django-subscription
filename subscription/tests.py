@@ -27,3 +27,10 @@ class SubscriptionUtil(TestCase):
                         self.assertEqual(added.month, 1)
                     else:
                         self.assertEqual(added.month, start.month + 1)
+
+    def test_leap_year(self):
+        test_date = date(A_LEAP_YEAR,2,29)
+        try:
+            subscription.utils.extend_date_by(test_date,1,'Y')
+        except ValueError:
+            self.fail()
