@@ -43,7 +43,7 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if form.cleaned_data['extend_subscription']:
-            obj.extend()
+            obj._extend()
         if form.cleaned_data['fix_group_membership']:
             obj.fix()
         obj.save()
@@ -57,7 +57,7 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
     fix.short_description = 'Fix group membership'
 
     def extend(self, request, queryset):
-        for us in queryset.all(): us.extend()
+        for us in queryset.all(): us._extend()
     extend.short_description = 'Extend subscription'
 
 admin.site.register(UserSubscription, UserSubscriptionAdmin)
