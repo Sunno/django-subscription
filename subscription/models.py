@@ -27,13 +27,11 @@ class Subscription(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=64, decimal_places=2)
     trial_period = models.PositiveIntegerField(null=True, blank=True)
-    trial_unit = models.CharField(max_length=1, null=True,
-                                       choices = ((None, ugettext_lazy("No trial")),)
-                                       + _TIME_UNIT_CHOICES)
+    trial_unit = models.CharField(max_length=1, null=True, blank=True,
+                                       choices=_TIME_UNIT_CHOICES)
     recurrence_period = models.PositiveIntegerField(null=True, blank=True)
-    recurrence_unit = models.CharField(max_length=1, null=True,
-                                       choices = ((None, ugettext_lazy("No recurrence")),)
-                                       + _TIME_UNIT_CHOICES)
+    recurrence_unit = models.CharField(max_length=1, null=True, blank=True,
+                                       choices= _TIME_UNIT_CHOICES)
     group = models.ForeignKey(auth.models.Group, null=False, blank=False)
 
     _PLURAL_UNITS = {
@@ -114,7 +112,7 @@ class UserSubscriptionManager(models.Manager):
         Loops through all UserSubscription objects with `expires' field
         earlier than datetime.date.today() and forces correct group
         membership.
-        
+
         Run this on a cronjob, every X minutes/hours/days.
         """
         for us in self.objects.get(expires__lt=datetime.date.today()):
@@ -197,14 +195,14 @@ class UserSubscription(models.Model):
 
     def activate(self,send_signal=True):
         """Activate this user subscription plan.
-        
+
             Usually you'll want to call this after signing up the
             user to this subscription (ie. us.signup()) and having
             received the payment.
         """
         s = self.subscription
         u = self.user
-        
+
         if not s.recurrence_unit:
             #one-time payment
             self._subscribe()
@@ -223,7 +221,7 @@ class UserSubscription(models.Model):
         """Signup the user to this subscription plan"""
         u = self.user
         s = self.subscription
-        
+
         # deactivate or delete all user's other subscriptions
         for old_us in u.usersubscription_set.all():
             if old_us==self: continue     # don't touch current subscription
@@ -239,7 +237,7 @@ class UserSubscription(models.Model):
         self.active = True
         self.cancelled = False
         self.save()
-        
+
         if send_signal:
             signals.subscribed.send(s, subscription=s, user=u, usersubscription=self)
 
@@ -255,7 +253,7 @@ class UserSubscription(models.Model):
         if send_signal:
             signals.unsubscribed.send(self.subscription, subscription=self.subscription, user=self.user,
                                     usersubscription=self,reason='cancel')
-        
+
     def try_change(self, subscription):
         """Check whether upgrading/downgrading to `subscription' is possible.
 
