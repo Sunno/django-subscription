@@ -105,20 +105,7 @@ def __user_get_active_subscription(user):
         return None
 auth.models.User.add_to_class('get_active_subscription',__user_get_active_subscription)
 
-class UserSubscriptionManager(models.Manager):
-    def unsubscribe_expired(self):
-        """Unsubscribes all users whose subscription has expired.
-
-        Loops through all UserSubscription objects with `expires' field
-        earlier than datetime.date.today() and forces correct group
-        membership.
-
-        Run this on a cronjob, every X minutes/hours/days.
-        """
-        for us in self.objects.get(expires__lt=datetime.date.today()):
-            us.fix()
-
-class ActiveUSManager(UserSubscriptionManager):
+class ActiveUSManager(models.Manager):
     """Custom Manager for UserSubscription that returns only live US objects."""
     def get_query_set(self):
         return super(ActiveUSManager, self).get_query_set().filter(active=True)
@@ -284,3 +271,15 @@ class UserSubscription(models.Model):
         if self.expired():
             rv += u' (expired)'
         return rv
+
+def unsubscribe_expired():
+    """Unsubscribes all users whose subscription has expired.
+
+    Loops through all UserSubscription objects with `expires' field
+    earlier than datetime.date.today() and forces correct group
+    membership.
+
+    Run this on a cronjob, every X minutes/hours/days.
+    """
+    for us in UserSubscription.objects.filter(expires__lt=datetime.date.today()):
+        us.fix()
