@@ -18,7 +18,8 @@ def subscription_required(function=None,
 
 
     actual_decorator = user_passes_test(
-        lambda u: (valid_helper(u) or u.is_coach or u.is_superuser),
+        lambda u: (valid_helper(u) or u.is_coach or u.is_superuser or
+                   u.has_scholarship),
         login_url=subscription_url,
         redirect_field_name=redirect_field_name
     )
