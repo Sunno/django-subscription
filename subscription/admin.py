@@ -27,6 +27,7 @@ _user.allow_tags = True
 class UserSubscriptionAdminForm(forms.ModelForm):
     class Meta:
         model = UserSubscription
+        exclude = []
     fix_group_membership = forms.fields.BooleanField(required=False)
     extend_subscription = forms.fields.BooleanField(required=False)
 
