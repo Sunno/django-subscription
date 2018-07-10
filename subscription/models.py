@@ -212,7 +212,8 @@ class UserSubscription(models.Model):
         # deactivate or delete all user's other subscriptions
         for old_us in u.usersubscription_set.all():
             if old_us==self: continue     # don't touch current subscription
-            if old_us.cancelled:
+            if old_us.cancelled or (old_us.expired() and\
+                                    old_us.subscription == s):
                 old_us.delete()
             else:
                 old_us.active = False
