@@ -268,7 +268,9 @@ class UserSubscription(models.Model):
                  (), dict(object_id=str(self.id)) )
 
     def __unicode__(self):
-        rv = u"%s's %s" % ( self.user.get_full_name(), self.subscription )
+        rv = u"%s's %s" % (
+            self.user.get_full_name() or self.user.username,
+            self.subscription )
         if self.expired():
             rv += u' (expired)'
         return rv
