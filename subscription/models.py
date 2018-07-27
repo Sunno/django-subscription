@@ -113,7 +113,7 @@ class ActiveUSManager(models.Manager):
 class UserSubscription(models.Model):
     user = models.ForeignKey(auth.models.User)
     subscription = models.ForeignKey(Subscription)
-    expires = models.DateField(null = True, default=datetime.date.today)
+    expires = models.DateField(null=True, blank=True)
     active = models.BooleanField(default=True)
     cancelled = models.BooleanField(default=True)
 
