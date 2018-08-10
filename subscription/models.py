@@ -236,6 +236,7 @@ class UserSubscription(models.Model):
             self.delete()
         else:
             self.cancelled = True
+            self.active = False
             self.save()
 
         if send_signal:
