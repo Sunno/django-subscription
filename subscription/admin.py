@@ -4,43 +4,65 @@ from django.utils.html import conditional_escape as esc
 
 from models import Subscription, UserSubscription
 
+
 def _pricing(sub): return sub.get_pricing_display()
+
+
 def _trial(sub): return sub.get_trial_display()
+
 
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('name', _pricing, _trial)
-    prepopulated_fields = { 'slug':('name',) }
+    prepopulated_fields = {'slug': ('name',)}
     exclude = []
-    
+
+
 admin.site.register(Subscription, SubscriptionAdmin)
+
 
 def _subscription(trans):
     return u'<a href="/admin/subscription/subscription/%d/">%s</a>' % (
-        trans.subscription.pk, esc(trans.subscription) )
+        trans.subscription.pk, esc(trans.subscription))
+
+
 _subscription.allow_tags = True
 
+
 def _user(trans):
+    name = trans.user.get_full_name() or trans.user.username
     return u'<a href="/admin/auth/user/%d/">%s</a>' % (
-        trans.user.pk, esc(trans.user.get_full_name()) )
+        trans.user.pk, esc(name))
+
+
 _user.allow_tags = True
+
 
 class UserSubscriptionAdminForm(forms.ModelForm):
     class Meta:
         model = UserSubscription
         exclude = []
+
     fix_group_membership = forms.fields.BooleanField(required=False)
     extend_subscription = forms.fields.BooleanField(required=False)
 
+
 class UserSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ( '__unicode__', _user, _subscription, 'active', 'expires', 'valid' )
-    list_display_links = ( '__unicode__', )
-    list_filter = ('active', 'subscription', )
+    list_display = (
+        '__unicode__', _user, _subscription, 'active', 'expires', 'valid')
+    list_display_links = ('__unicode__',)
+    list_filter = ('active', 'subscription',)
     date_hierarchy = 'expires'
     form = UserSubscriptionAdminForm
     fieldsets = (
-        (None, {'fields' : ('user', 'subscription', 'expires', 'active')}),
-        ('Actions', {'fields' : ('fix_group_membership', 'extend_subscription'),
-                     'classes' : ('collapse',)}),
+        (None, {'fields': (
+            'user',
+            'subscription',
+            'expires',
+            'active',
+            'cancelled'
+        )}),
+        ('Actions', {'fields': ('fix_group_membership', 'extend_subscription'),
+                     'classes': ('collapse',)}),
         )
 
     def save_model(self, request, obj, form, change):
@@ -51,7 +73,7 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
         obj.save()
 
     # action for Django-SVN or django-batch-admin app
-    actions = ( 'fix', 'extend', )
+    actions = ('fix', 'extend',)
 
     def fix(self, request, queryset):
         for us in queryset.all():
@@ -59,7 +81,9 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
     fix.short_description = 'Fix group membership'
 
     def extend(self, request, queryset):
-        for us in queryset.all(): us._extend()
+        for us in queryset.all():
+            us._extend()
     extend.short_description = 'Extend subscription'
+
 
 admin.site.register(UserSubscription, UserSubscriptionAdmin)
